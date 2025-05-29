@@ -20,12 +20,22 @@ export default class HomePage {
     this.mapContainer = document.getElementById('map');
     await this.presenter.init();
 
-    // Add event listener for delete buttons
     this.storyList.addEventListener('click', async (event) => {
       if (event.target.classList.contains('delete-button')) {
         const storyId = event.target.dataset.id;
         if (storyId) {
           await this.presenter.deleteStory(storyId);
+        }
+      } else if (event.target.classList.contains('like-button')) {
+        const storyId = event.target.dataset.id;
+        const storyIndex = event.target.dataset.index;
+        if (storyId && storyIndex !== undefined) {
+          const story = this.currentStories[storyIndex];
+          if (story && story.id === storyId) {
+            await this.presenter.saveStoryOnUserAction(story);
+            event.target.disabled = true;
+            event.target.textContent = 'Liked';
+          }
         }
       }
     });
@@ -37,12 +47,15 @@ export default class HomePage {
       return;
     }
 
-    this.storyList.innerHTML = stories.map(story => `
+    this.currentStories = stories;
+
+    this.storyList.innerHTML = stories.map((story, index) => `
       <div class="story-item" style="flex: 1 1 300px; border: 1px solid #ccc; padding: 1rem; border-radius: 8px;">
         <img src="${story.photoUrl}" alt="${story.description || 'Story image'}" style="width: 100%; height: auto; border-radius: 4px;" />
         <p><strong>Description:</strong> ${story.description || '-'}</p>
         <p><strong>Created At:</strong> ${new Date(story.createdAt).toLocaleString()}</p>
         <button class="delete-button" data-id="${story.id}" style="background-color: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Delete</button>
+        <button class="like-button" data-id="${story.id}" data-index="${index}" style="background-color: #3498db; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;">Like</button>
       </div>
     `).join('');
   }

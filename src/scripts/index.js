@@ -31,13 +31,21 @@ async function sendSubscriptionToServer(subscription) {
     console.warn('No auth token found, cannot subscribe to push notifications');
     return;
   }
+  // Extract only the required fields to avoid sending expirationTime
+  const body = {
+    endpoint: subscription.endpoint,
+    keys: {
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+    },
+  };
   const response = await fetch(`${config.BASE_URL}/notifications/subscribe`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
     },
-    body: JSON.stringify(subscription),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
     throw new Error('Failed to subscribe to push notifications');

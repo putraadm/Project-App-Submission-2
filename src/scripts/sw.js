@@ -1,14 +1,19 @@
 import { precacheAndRoute } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate } from 'workbox-strategies';
+import { StaleWhileRevalidate, CacheFirst, NetworkOnly } from 'workbox-strategies';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { ExpirationPlugin } from 'workbox-expiration';
+import { BackgroundSyncPlugin } from 'workbox-background-sync';
 
 precacheAndRoute(self.__WB_MANIFEST || []);
 
+const bgSyncPlugin = new BackgroundSyncPlugin('apiQueue', {
+  maxRetentionTime: 24 * 60, 
+});
+
 registerRoute(
   ({ request }) => request.destination === 'image',
-  new StaleWhileRevalidate({
+  new CacheFirst({
     cacheName: 'images-cache',
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
@@ -18,13 +23,9 @@ registerRoute(
 );
 
 registerRoute(
-  ({ url }) => url.origin === 'https://your-api-domain.com',
-  new StaleWhileRevalidate({
-    cacheName: 'api-cache',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 50, maxAgeSeconds: 5 * 60 }), // 5 minutes
-    ],
+  ({ url }) => url.origin === 'https://story-api.dicoding.dev',
+  new NetworkOnly({
+    plugins: [bgSyncPlugin],
   })
 );
 
