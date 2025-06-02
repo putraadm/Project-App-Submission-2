@@ -1,4 +1,3 @@
-
 import { getStories } from '../../data/api';
 import { saveStories, saveStory, getStories as getStoredStories, deleteStory as deleteStoredStory, saveDeletedStory, getDeletedStories } from '../../utils/db';
 
@@ -9,13 +8,21 @@ export default class HomePresenter {
 
   async init() {
     try {
-      const stories = await getStories();
+      const apiStories = await getStories();
       const deletedStories = await getDeletedStories();
       const deletedIds = deletedStories.map(ds => ds.id);
-      const filteredStories = stories.filter(story => !deletedIds.includes(story.id));
-      // Removed automatic saving to IndexedDB here
-      this.view.showStories(filteredStories);
-      this.view.initMap(filteredStories);
+      const filteredApiStories = apiStories.filter(story => !deletedIds.includes(story.id));
+
+      const likedStories = await getStoredStories();
+      const filteredLikedStories = likedStories.filter(story => !deletedIds.includes(story.id));
+
+      const mergedStoriesMap = new Map();
+      filteredApiStories.forEach(story => mergedStoriesMap.set(story.id, story));
+      filteredLikedStories.forEach(story => mergedStoriesMap.set(story.id, story));
+      const mergedStories = Array.from(mergedStoriesMap.values());
+
+      this.view.showStories(mergedStories);
+      this.view.initMap(mergedStories);
     } catch (error) {
       console.warn('Failed to fetch stories from API, loading from IndexedDB', error);
       const storedStories = await getStoredStories();
@@ -30,8 +37,15 @@ export default class HomePresenter {
 
   async saveStoryOnUserAction(story) {
     try {
+      console.log('Saving story on user action:', story);
       await saveStory(story);
-      // Optionally update the view or notify user
+      const index = this.view.currentStories.findIndex(s => s.id === story.id);
+      if (index !== -1) {
+        this.view.currentStories[index].liked = true;
+      }
+      console.log('Story saved successfully.');
+      this.view.showStories(this.view.currentStories);
+      this.view.initMap(this.view.currentStories);
     } catch (error) {
       console.error('Failed to save story on user action:', error);
       this.view.showError('Failed to save story.');
@@ -42,7 +56,6 @@ export default class HomePresenter {
     try {
       console.log('Deleting story locally with id:', id, 'type:', typeof id);
       const idStr = String(id);
-      // Do not call API delete due to CORS limitation
       await deleteStoredStory(idStr);
       await saveDeletedStory(idStr);
       const updatedStories = await getStoredStories();
@@ -51,6 +64,23 @@ export default class HomePresenter {
     } catch (error) {
       console.error('Failed to delete story locally:', error);
       this.view.showError('Failed to delete story.');
+    }
+  }
+
+  async removeLikedStory(id) {
+    try {
+      console.log('Removing liked story with id:', id);
+      const idStr = String(id);
+      await deleteStoredStory(idStr);
+      const index = this.view.currentStories.findIndex(s => s.id === idStr);
+      if (index !== -1) {
+        this.view.currentStories[index].liked = false;
+      }
+      this.view.showStories(this.view.currentStories);
+      this.view.initMap(this.view.currentStories);
+    } catch (error) {
+      console.error('Failed to remove liked story:', error);
+      this.view.showError('Failed to remove liked story.');
     }
   }
 }

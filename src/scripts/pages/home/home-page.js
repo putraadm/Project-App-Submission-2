@@ -33,9 +33,20 @@ export default class HomePage {
           const story = this.currentStories[storyIndex];
           if (story && story.id === storyId) {
             await this.presenter.saveStoryOnUserAction(story);
-            event.target.disabled = true;
-            event.target.textContent = 'Liked';
+            event.target.classList.remove('like-button');
+            event.target.classList.add('unlike-button');
+            event.target.textContent = 'Unlike';
+            event.target.style.backgroundColor = '#95a5a6'; // unlike button color
           }
+        }
+      } else if (event.target.classList.contains('unlike-button')) {
+        const storyId = event.target.dataset.id;
+        if (storyId) {
+          await this.presenter.removeLikedStory(storyId);
+          event.target.classList.remove('unlike-button');
+          event.target.classList.add('like-button');
+          event.target.textContent = 'Like';
+          event.target.style.backgroundColor = '#3498db'; // like button color
         }
       }
     });
@@ -49,15 +60,22 @@ export default class HomePage {
 
     this.currentStories = stories;
 
-    this.storyList.innerHTML = stories.map((story, index) => `
+    this.storyList.innerHTML = stories.map((story, index) => {
+      const isLiked = this.isStoryLiked(story.id);
+      return `
       <div class="story-item" style="flex: 1 1 300px; border: 1px solid #ccc; padding: 1rem; border-radius: 8px;">
         <img src="${story.photoUrl}" alt="${story.description || 'Story image'}" style="width: 100%; height: auto; border-radius: 4px;" />
         <p><strong>Description:</strong> ${story.description || '-'}</p>
         <p><strong>Created At:</strong> ${new Date(story.createdAt).toLocaleString()}</p>
         <button class="delete-button" data-id="${story.id}" style="background-color: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Delete</button>
-        <button class="like-button" data-id="${story.id}" data-index="${index}" style="background-color: #3498db; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;">Like</button>
+        <button class="${isLiked ? 'unlike-button' : 'like-button'}" data-id="${story.id}" data-index="${index}" style="background-color: ${isLiked ? '#95a5a6' : '#3498db'}; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;">${isLiked ? 'Unlike' : 'Like'}</button>
       </div>
-    `).join('');
+      `;
+    }).join('');
+  }
+
+  isStoryLiked(id) {
+    return this.currentStories.some(story => story.id === id && story.liked);
   }
 
   async initMap(stories) {
