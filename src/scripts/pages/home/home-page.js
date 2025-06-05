@@ -36,7 +36,7 @@ export default class HomePage {
             event.target.classList.remove('like-button');
             event.target.classList.add('unlike-button');
             event.target.textContent = 'Unlike';
-            event.target.style.backgroundColor = '#95a5a6'; // unlike button color
+            event.target.style.backgroundColor = '#95a5a6';
           }
         }
       } else if (event.target.classList.contains('unlike-button')) {
@@ -67,7 +67,6 @@ export default class HomePage {
         <img src="${story.photoUrl}" alt="${story.description || 'Story image'}" style="width: 100%; height: auto; border-radius: 4px;" />
         <p><strong>Description:</strong> ${story.description || '-'}</p>
         <p><strong>Created At:</strong> ${new Date(story.createdAt).toLocaleString()}</p>
-        <button class="delete-button" data-id="${story.id}" style="background-color: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Delete</button>
         <button class="${isLiked ? 'unlike-button' : 'like-button'}" data-id="${story.id}" data-index="${index}" style="background-color: ${isLiked ? '#95a5a6' : '#3498db'}; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;">${isLiked ? 'Unlike' : 'Like'}</button>
       </div>
       `;

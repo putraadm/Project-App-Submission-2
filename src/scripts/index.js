@@ -31,7 +31,6 @@ async function sendSubscriptionToServer(subscription) {
     console.warn('No auth token found, cannot subscribe to push notifications');
     return;
   }
-  // Extract only the required fields to avoid sending expirationTime
   const body = {
     endpoint: subscription.endpoint,
     keys: {
@@ -92,6 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     navList.appendChild(createNavItem('#/', 'Beranda'));
     if (token) {
       navList.appendChild(createNavItem('#/add', 'Add Story'));
+      navList.appendChild(createNavItem('#/liked', 'Liked'));
       navList.appendChild(createNavItem('#/logout', 'Logout'));
       navList.appendChild(createNavItem('#/subscribe', 'Subscribe'));
     } else {
@@ -110,27 +110,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     return li;
   }
 
-  // Handle logout route
   window.addEventListener('hashchange', () => {
     if (window.location.hash === '#/logout') {
       localStorage.removeItem('authToken');
       updateNav();
       window.location.hash = '#/';
-      // Unsubscribe from push notifications on logout
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(unsubscribeUserFromPush).catch(console.error);
       }
     } else if (window.location.hash === '#/subscribe') {
-      // Handle subscribe/unsubscribe toggle
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(async (registration) => {
           const subscription = await registration.pushManager.getSubscription();
           if (subscription) {
-            // Already subscribed, so unsubscribe
             await unsubscribeUserFromPush(registration);
             alert('Unsubscribed from push notifications.');
           } else {
-            // Not subscribed, so subscribe
             const newSubscription = await subscribeUserToPush(registration);
             await sendSubscriptionToServer(newSubscription);
             alert('Subscribed to push notifications.');
@@ -139,7 +134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         alert('Service Worker not supported in this browser.');
       }
-      // Reset hash to home after action
       window.location.hash = '#/';
     }
   });
@@ -153,7 +147,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateNav();
   });
 
-  // Register service worker for PWA
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
