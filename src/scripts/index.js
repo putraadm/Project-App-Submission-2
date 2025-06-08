@@ -31,6 +31,7 @@ async function sendSubscriptionToServer(subscription) {
     console.warn('No auth token found, cannot subscribe to push notifications');
     return;
   }
+  subscription = subscription.toJSON();
   const body = {
     endpoint: subscription.endpoint,
     keys: {
